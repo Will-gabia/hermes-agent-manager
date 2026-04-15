@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         containers: document.getElementById('containers-view'),
         servers: document.getElementById('servers-view'),
         templates: document.getElementById('templates-view'),
+        playground: document.getElementById('playground-view'),
         caddy: document.getElementById('caddy-view'),
         config: document.getElementById('config-view')
     };
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (viewName === 'containers') loadContainers();
         if (viewName === 'servers') loadServers();
         if (viewName === 'templates') loadTemplates();
+        if (viewName === 'playground') loadPlayground();
         if (viewName === 'caddy') loadCaddyData();
         if (viewName === 'config') loadConfig();
     };
@@ -163,6 +165,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             const err = await res.json();
             alert(err.error || 'Add failed');
+        }
+    });
+
+    // Playground
+    const loadPlayground = async () => {
+        const res = await fetch('/api/containers?limit=100');
+        const data = await res.json();
+        const activeAgents = data.items.filter(c => c.status === 'active');
+        
+        const select = document.getElementById('chat-agent-select');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Select an active agent...</option>' + 
+            activeAgents.map(a => `<option value="${a.id}" data-domain="${a.domain_name}" data-token="${a.api_token}">${a.domain_name} (${a.slug})</option>`).join('');
+        select.value = currentVal;
+    };
+
+    const addChatMessage = (role, content) => {
+        const container = document.getElementById('chat-messages');
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble chat-${role}`;
+        bubble.innerText = content;
+        container.appendChild(bubble);
+        container.scrollTop = container.scrollHeight;
+    };
+
+    document.getElementById('chat-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const select = document.getElementById('chat-agent-select');
+        const option = select.selectedOptions[0];
+        if (!option || !option.value) {
+            alert('Please select an active agent first');
+            return;
+        }
+
+        const input = document.getElementById('chat-input');
+        const content = input.value.trim();
+        if (!content) return;
+
+        const domain = option.dataset.domain;
+        const token = option.dataset.token;
+        const sendBtn = document.getElementById('chat-send-btn');
+
+        addChatMessage('user', content);
+        input.value = '';
+        
+        sendBtn.disabled = true;
+        sendBtn.setAttribute('aria-busy', 'true');
+        
+        const systemMsg = document.createElement('div');
+        systemMsg.className = 'chat-bubble chat-system';
+        systemMsg.innerText = 'Agent is thinking...';
+        document.getElementById('chat-messages').appendChild(systemMsg);
+
+        try {
+            // Use backend proxy to avoid CORS issues on localhost
+            const res = await fetch(`/api/containers/proxy-chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    domain,
+                    token,
+                    payload: {
+                        model: 'hermes-agent',
+                        messages: [{ role: 'user', content }]
+                    }
+                })
+            });
+
+            systemMsg.remove();
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || `HTTP Error ${res.status}`);
+            }
+
+            const data = await res.json();
+            const reply = data.choices?.[0]?.message?.content || 'No response received';
+            addChatMessage('agent', reply);
+        } catch (e) {
+            systemMsg.remove();
+            addChatMessage('system', `Error: ${e.message}`);
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.removeAttribute('aria-busy');
         }
     });
 

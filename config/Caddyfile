@@ -1,11 +1,3 @@
-silent-node-4573.safe-agent.cloud {
-    reverse_proxy http://211.211.140.52:80
-}
-
-bright-hermes-9391.safe-agent.cloud {
-    reverse_proxy http://211.211.140.52:5232
-}
-
 clever-mango.safe-agent.cloud {
     reverse_proxy http://211.211.140.52:26963
 }

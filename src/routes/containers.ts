@@ -153,4 +153,30 @@ containers.get('/templates', async (c) => {
   return c.json(items);
 });
 
+// Proxy for playground chat to avoid CORS
+containers.post('/proxy-chat', async (c) => {
+  const { domain, token, payload } = await c.req.json();
+  
+  try {
+    const response = await fetch(`https://${domain}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return c.json(errorData, response.status as any);
+    }
+
+    const data = await response.json();
+    return c.json(data);
+  } catch (e) {
+    return c.json({ error: { message: String(e) } }, 500);
+  }
+});
+
 export default containers;
