@@ -38,6 +38,9 @@ export class OrchestrationService {
     const container = await prisma.container.create({
       data: {
         server_id: serverId,
+        server_ip: server.remote_ip,
+        server_port: server.port,
+        server_api_token: server.api_token,
         template_id: templateId,
         slug,
         domain_name,
@@ -213,12 +216,11 @@ export class OrchestrationService {
     if (!path) return;
     const activeContainers = await prisma.container.findMany({
       where: { status: 'active' },
-      include: { server: true },
     });
 
     const entries = activeContainers.map(c => ({
       domain: c.domain_name,
-      targetIp: c.server.remote_ip,
+      targetIp: c.server_ip || '127.0.0.1',
       targetPort: c.service_port || 80,
     }));
 

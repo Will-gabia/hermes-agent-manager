@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="info-item">
                         <span class="info-label">Server</span>
-                        <span class="info-value" title="${c.server.remote_ip}">${c.server.remote_ip}</span>
+                        <span class="info-value" title="${c.server_ip || '-'}">${c.server_ip || '-'}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Template</span>

@@ -59,14 +59,17 @@ containers.post('/:id/start', async (c) => {
   const id = c.req.param('id');
   const container = await prisma.container.findUnique({ where: { id }, include: { server: true } });
   const remoteRef = container?.container_name || container?.container_id;
-  if (!container || !remoteRef) return c.json({ error: 'Container not found or not provisioned' }, 404);
+  
+  const ip = container?.server?.remote_ip || container?.server_ip;
+  const port = container?.server?.port || container?.server_port;
+  const token = container?.server?.api_token || container?.server_api_token;
+
+  if (!container || !remoteRef || !ip || !port || !token) {
+    return c.json({ error: 'Container connection info missing (server might have been deleted)' }, 404);
+  }
 
   try {
-    const docker = new RemoteDockerService({ 
-      remoteIp: container.server.remote_ip, 
-      port: container.server.port, 
-      apiToken: container.server.api_token 
-    });
+    const docker = new RemoteDockerService({ remoteIp: ip, port, apiToken: token });
     await docker.startContainer(remoteRef);
     
     // Fetch actual status from remote
@@ -90,14 +93,17 @@ containers.post('/:id/stop', async (c) => {
   const id = c.req.param('id');
   const container = await prisma.container.findUnique({ where: { id }, include: { server: true } });
   const remoteRef = container?.container_name || container?.container_id;
-  if (!container || !remoteRef) return c.json({ error: 'Container not found or not provisioned' }, 404);
+  
+  const ip = container?.server?.remote_ip || container?.server_ip;
+  const port = container?.server?.port || container?.server_port;
+  const token = container?.server?.api_token || container?.server_api_token;
+
+  if (!container || !remoteRef || !ip || !port || !token) {
+    return c.json({ error: 'Container connection info missing (server might have been deleted)' }, 404);
+  }
 
   try {
-    const docker = new RemoteDockerService({ 
-      remoteIp: container.server.remote_ip, 
-      port: container.server.port, 
-      apiToken: container.server.api_token 
-    });
+    const docker = new RemoteDockerService({ remoteIp: ip, port, apiToken: token });
     await docker.stopContainer(remoteRef);
     
     // Fetch actual status from remote
@@ -121,14 +127,17 @@ containers.post('/:id/refresh', async (c) => {
   const id = c.req.param('id');
   const container = await prisma.container.findUnique({ where: { id }, include: { server: true } });
   const remoteRef = container?.container_name || container?.container_id;
-  if (!container || !remoteRef) return c.json({ error: 'Container not found or not provisioned' }, 404);
+  
+  const ip = container?.server?.remote_ip || container?.server_ip;
+  const port = container?.server?.port || container?.server_port;
+  const token = container?.server?.api_token || container?.server_api_token;
+
+  if (!container || !remoteRef || !ip || !port || !token) {
+    return c.json({ error: 'Container connection info missing (server might have been deleted)' }, 404);
+  }
 
   try {
-    const docker = new RemoteDockerService({ 
-      remoteIp: container.server.remote_ip, 
-      port: container.server.port, 
-      apiToken: container.server.api_token 
-    });
+    const docker = new RemoteDockerService({ remoteIp: ip, port, apiToken: token });
     const info = await docker.getContainer(remoteRef);
     const updated = await prisma.container.update({ where: { id }, data: { status: info.status } });
     return c.json(updated);

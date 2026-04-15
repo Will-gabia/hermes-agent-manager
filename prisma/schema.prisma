@@ -44,7 +44,10 @@ model ContainerTemplate {
 
 model Container {
   id              String   @id @default(uuid())
-  server_id       String
+  server_id       String?
+  server_ip       String?  // Snapshot of server IP
+  server_port     Int?     // Snapshot of server port
+  server_api_token String? // Snapshot of server API token
   template_id     String?
   container_id    String?  // Remote container ID
   container_name  String?
@@ -56,7 +59,7 @@ model Container {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  server          Server            @relation(fields: [server_id], references: [id])
+  server          Server?           @relation(fields: [server_id], references: [id], onDelete: SetNull)
   template        ContainerTemplate? @relation(fields: [template_id], references: [id], onDelete: SetNull)
   operations      Operation[]
 }

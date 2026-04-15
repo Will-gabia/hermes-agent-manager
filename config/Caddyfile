@@ -1,7 +1,7 @@
 clever-mango.safe-agent.cloud {
-    reverse_proxy http://211.211.140.52:26963
+    reverse_proxy http://127.0.0.1:26963
 }
 
 purple-cobra.safe-agent.cloud {
-    reverse_proxy http://211.211.140.52:26449
+    reverse_proxy http://127.0.0.1:26449
 }

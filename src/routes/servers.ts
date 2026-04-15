@@ -88,12 +88,6 @@ servers.put('/:id', async (c) => {
 servers.delete('/:id', async (c) => {
   const id = c.req.param('id');
   
-  // Check if containers exist
-  const containersCount = await prisma.container.count({ where: { server_id: id } });
-  if (containersCount > 0) {
-    return c.json({ error: 'Cannot delete server with active containers' }, 400);
-  }
-
   await prisma.server.delete({ where: { id } });
   return c.json({ success: true });
 });
