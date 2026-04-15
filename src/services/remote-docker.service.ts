@@ -82,9 +82,18 @@ export class RemoteDockerService {
   }
 
   async deleteContainer(id: string) {
-    await this.request(`/containers/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      await this.request(`/containers/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (e) {
+      // If container not found, treat as success for deletion idempotency
+      if (String(e).includes('404')) {
+        console.warn(`Remote container ${id} not found, treating as already deleted.`);
+        return;
+      }
+      throw e;
+    }
   }
 
   async startContainer(id: string) {

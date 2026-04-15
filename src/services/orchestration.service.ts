@@ -156,13 +156,18 @@ export class OrchestrationService {
       });
 
       // Step 1: Remote delete
-      if (container.container_id) {
+      const remoteRef = container.container_name || container.container_id;
+      const ip = container.server?.remote_ip || container.server_ip;
+      const port = container.server?.port || container.server_port;
+      const token = container.server?.api_token || container.server_api_token;
+
+      if (remoteRef && ip && port && token) {
         const docker = new RemoteDockerService({
-          remoteIp: container.server.remote_ip,
-          port: container.server.port,
-          apiToken: container.server.api_token,
+          remoteIp: ip,
+          port: port,
+          apiToken: token,
         });
-        await docker.deleteContainer(container.container_id).catch(e => console.warn('Remote delete failed, continuing...', e));
+        await docker.deleteContainer(remoteRef).catch(e => console.warn('Remote delete failed, continuing...', e));
       }
 
       await prisma.operation.update({

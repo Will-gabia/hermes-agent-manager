@@ -61,12 +61,16 @@ export class CloudflareService {
 
   async deleteDnsRecord(name: string) {
     const existing = await this.getDnsRecords(name);
-    if (existing.length === 0) return;
+    if (!existing || existing.length === 0) return;
 
     for (const record of existing) {
-      await this.request(`/zones/${this.config.zoneId}/dns_records/${record.id}`, {
-        method: 'DELETE',
-      });
+      try {
+        await this.request(`/zones/${this.config.zoneId}/dns_records/${record.id}`, {
+          method: 'DELETE',
+        });
+      } catch (e) {
+        console.warn(`Cloudflare record ${record.id} deletion failed, might be already gone:`, e);
+      }
     }
   }
 }
