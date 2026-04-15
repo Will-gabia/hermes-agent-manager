@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Config {
+  id                  Int     @id @default(1)
+  base_domain         String?
+  cloudflare_api_key  String?
+  cloudflare_zone_id  String?
+  target_cname        String?
+  caddyfile_path      String? @default("./config/Caddyfile")
+}
+
+model Server {
+  id          String   @id @default(uuid())
+  remote_ip   String
+  port        Int      @default(3000)
+  api_token   String
+  max_agents  Int      @default(10)
+  metadata    String?  // JSON string for health/status
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  containers  Container[]
+}
+
+model ContainerTemplate {
+  id              String   @id // e.g. 'default'
+  display_name    String
+  description     String?
+  enabled         Boolean  @default(true)
+  metadata        String   // JSON string for docker-container-api metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  containers      Container[]
+}
+
+model Container {
+  id              String   @id @default(uuid())
+  server_id       String
+  template_id     String?
+  container_id    String?  // Remote container ID
+  container_name  String?
+  api_token       String?  // Hermes API key for the service
+  slug            String   @unique
+  domain_name     String   @unique
+  service_port    Int?
+  status          String   @default("creating") // creating, active, stopping, stopped, deleting, deleted, error
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  server          Server            @relation(fields: [server_id], references: [id])
+  template        ContainerTemplate? @relation(fields: [template_id], references: [id], onDelete: SetNull)
+  operations      Operation[]
+}
+
+model Operation {
+  id              String   @id @default(uuid())
+  container_id    String
+  operation_type  String   // create, delete, start, stop, refresh_status
+  current_step    String?
+  status          String   // pending, processing, success, failure
+  error_message   String?
+  started_at      DateTime @default(now())
+  finished_at     DateTime?
+
+  container       Container @relation(fields: [container_id], references: [id])
+}

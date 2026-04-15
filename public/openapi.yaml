@@ -1,0 +1,188 @@
+openapi: 3.0.0
+info:
+  title: Hermes Agent Manager API
+  version: 1.0.0
+  description: API for managing remote Docker agents, servers, and configurations.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/config:
+    get:
+      summary: Get global configuration
+      tags: [Config]
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update global configuration
+      tags: [Config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Config'
+      responses:
+        '200': { description: Updated }
+
+  /api/servers:
+    get:
+      summary: List remote servers
+      tags: [Servers]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Add remote server
+      tags: [Servers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerInput'
+      responses:
+        '200': { description: Created }
+
+  /api/containers:
+    get:
+      summary: List agents
+      tags: [Agents]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: show_deleted
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Provision a new agent
+      tags: [Agents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                server_id: { type: string }
+                template_id: { type: string }
+      responses:
+        '200': { description: Provisioning started }
+
+  /api/containers/{id}:
+    delete:
+      summary: Delete an agent
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /api/containers/{id}/start:
+    post:
+      summary: Start an agent
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /api/containers/{id}/stop:
+    post:
+      summary: Stop an agent
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /api/containers/{id}/refresh:
+    post:
+      summary: Refresh agent status from remote
+      tags: [Agents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /api/caddy/download:
+    get:
+      summary: Download Caddyfile
+      tags: [Config]
+      responses:
+        '200':
+          description: Caddyfile download
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+
+  /api/templates:
+    get:
+      summary: List all templates
+      tags: [Templates]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create or update a template
+      tags: [Templates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+                display_name: { type: string }
+                description: { type: string }
+                enabled: { type: boolean }
+                metadata: { type: string }
+      responses:
+        '200': { description: OK }
+
+components:
+  schemas:
+    Config:
+      type: object
+      properties:
+        base_domain: { type: string }
+        cloudflare_api_key: { type: string }
+        cloudflare_zone_id: { type: string }
+        target_cname: { type: string }
+        caddyfile_path: { type: string }
+    ServerInput:
+      type: object
+      required: [remote_ip, port, api_token]
+      properties:
+        remote_ip: { type: string }
+        port: { type: number }
+        api_token: { type: string }
+        max_agents: { type: number }

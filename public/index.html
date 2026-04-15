@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermes | Agent Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #5e5ce6;
+            --pico-primary-hover: #4a48cc;
+            --body-bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --nav-bg: #1a1d23;
+        }
+        
+        body { background-color: var(--body-bg); font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; }
+        .hidden { display: none; }
+        
+        /* Fixed Top Navigation */
+        nav.main-nav { 
+            background: var(--nav-bg); 
+            color: white;
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        nav.main-nav ul { display: flex; list-style: none; margin: 0; padding: 0; align-items: center; gap: 1rem; }
+        nav.main-nav ul li { margin: 0; padding: 0; }
+        
+        .brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: white; font-weight: 800; letter-spacing: 0.05em; font-size: 1.2rem; }
+        
+        /* Improved Tab Menu Design */
+        .nav-link { 
+            color: #adb5bd !important; 
+            text-decoration: none; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { color: white !important; background: rgba(255,255,255,0.1); }
+        .nav-link.active { color: white !important; background: var(--pico-primary); }
+        
+        /* Main Container */
+        main.container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1200px; }
+        
+        /* Dashboard Grid */
+        .container-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        article.container-card {
+            margin: 0;
+            padding: 1.5rem;
+            border: none;
+            border-radius: 16px;
+            background: var(--card-bg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        article.container-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
+        
+        /* Status Badges */
+        .status-badge { padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .status-active { background: #e1fcef; color: #14804a; }
+        .status-error { background: #ffe5e5; color: #d12424; }
+        .status-creating { background: #fff4e5; color: #b45d00; }
+        .status-stopped { background: #f0f2f5; color: #5f6672; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+        .domain-title { font-weight: 700; font-size: 1.15rem; color: #1a1d23; margin: 0; line-height: 1.2; }
+        .slug-sub { font-size: 0.8rem; color: #868e96; margin-top: 0.2rem; }
+        
+        .card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .info-item { display: flex; flex-direction: column; gap: 0.2rem; }
+        .info-label { color: #adb5bd; font-size: 0.65rem; text-transform: uppercase; font-weight: 700; }
+        .info-value { font-weight: 600; color: #495057; font-size: 0.85rem; }
+        
+        code.api-key { 
+            display: block; padding: 0.6rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;
+            font-size: 0.7rem; color: #495057; margin-top: 0.5rem; cursor: pointer; text-align: center;
+        }
+        
+        .card-actions { display: flex; gap: 0.5rem; border-top: 1px solid #f1f3f5; padding-top: 1.25rem; margin-top: auto; }
+        .card-actions button { flex: 1; padding: 0.5rem; font-size: 0.75rem; margin: 0; height: auto; }
+        
+        .search-bar { 
+            background: white; padding: 1.25rem 2rem; border-radius: 16px; margin-bottom: 2rem;
+            display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        pre { border-radius: 12px; font-size: 0.85rem; background: #1e1e1e; color: #d4d4d4; padding: 1.5rem; }
+    </style>
+</head>
+<body>
+    <!-- Login View -->
+    <main id="login-view" class="container" style="max-width: 400px; padding-top: 15vh;">
+        <article style="border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <header style="text-align: center; border: none; padding: 0; margin-bottom: 2rem;">
+                <img src="https://img.icons8.com/color/96/apollo.png" width="64">
+                <h2 style="margin-top: 1rem;">Hermes</h2>
+                <p style="color: #868e96; font-size: 0.9rem;">Agent Management Control Plane</p>
+            </header>
+            <form id="login-form">
+                <input type="text" id="login-id" placeholder="Admin ID" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" style="width: 100%; margin-top: 1rem;">Sign In</button>
+            </form>
+        </article>
+    </main>
+
+    <!-- Admin View -->
+    <div id="admin-view" class="hidden">
+        <nav class="main-nav">
+            <a href="#" id="logo-link" class="brand" onclick="switchView('containers')">
+                <img src="https://img.icons8.com/color/48/apollo.png" width="32"> 
+                HERMES
+            </a>
+            <ul>
+                <li><a href="#" class="nav-link active" data-view="containers">Agents</a></li>
+                <li><a href="#" class="nav-link" data-view="servers">Servers</a></li>
+                <li><a href="#" class="nav-link" data-view="templates">Templates</a></li>
+                <li><a href="#" class="nav-link" data-view="caddy">Caddyfile</a></li>
+                <li><a href="#" class="nav-link" data-view="config">Config</a></li>
+                <li><a href="/openapi.yaml" download="openapi.yaml" style="color: #ffcc00 !important; font-weight: 600; padding: 0.5rem 1rem; text-decoration: none;">API (YAML)</a></li>
+            </ul>
+            <ul>
+                <li><button id="logout-btn" class="outline secondary" style="padding: 0.3rem 1rem; font-size: 0.8rem; border-color: #495057; color: #ced4da;">Logout</button></li>
+            </ul>
+        </nav>
+
+        <main class="container">
+            <!-- Agents View -->
+            <section id="containers-view" class="view">
+                <div class="search-bar">
+                    <div style="flex: 1; min-width: 300px;">
+                        <input type="text" id="container-search" placeholder="Filter agents by domain..." style="margin-bottom: 0; border-radius: 10px;">
+                    </div>
+                    <label style="margin-bottom: 0; font-size: 0.9rem; color: #495057; font-weight: 500;">
+                        <input type="checkbox" id="show-deleted-check"> Show Deleted
+                    </label>
+                    <button id="show-create-modal" style="margin-bottom: 0; border-radius: 10px;">+ New Agent</button>
+                </div>
+                
+                <div id="containers-grid" class="container-grid"></div>
+            </section>
+
+            <!-- Servers View -->
+            <section id="servers-view" class="view hidden">
+                <article style="border-radius: 16px;">
+                    <header style="display: flex; justify-content: space-between; align-items: center; background: none; border-bottom: 1px solid #f1f3f5;">
+                        <h4 style="margin:0;">Remote Nodes</h4>
+                        <button id="show-add-server-modal" class="outline" style="padding: 0.4rem 1rem; font-size: 0.8rem;">+ Add Server</button>
+                    </header>
+                    <table id="servers-table" style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Host Address</th>
+                                <th>API Token</th>
+                                <th>Usage</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </article>
+            </section>
+
+            <!-- Templates View -->
+            <section id="templates-view" class="view hidden">
+                <article style="border-radius: 16px;">
+                    <header style="display: flex; justify-content: space-between; align-items: center; background: none; border-bottom: 1px solid #f1f3f5;">
+                        <h4 style="margin:0;">Agent Templates</h4>
+                        <button id="show-add-template-modal" class="outline" style="padding: 0.4rem 1rem; font-size: 0.8rem;">+ Add Template</button>
+                    </header>
+                    <table id="templates-table" style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Keyword ID</th>
+                                <th>Display Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </article>
+            </section>
+
+            <!-- Caddyfile View -->
+            <section id="caddy-view" class="view hidden">
+                <article style="border-radius: 16px;">
+                    <header style="display: flex; justify-content: space-between; align-items: center; background: none; border-bottom: 1px solid #f1f3f5;">
+                        <h4 style="margin:0;">Reverse Proxy Config</h4>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="/api/caddy/download" class="button outline" style="padding: 0.4rem 1rem; font-size: 0.8rem; margin-bottom: 0;">Download Caddyfile</a>
+                            <button class="outline" style="padding: 0.4rem 1rem; font-size: 0.8rem; margin-bottom: 0;" onclick="loadCaddyData()">↻ Refresh</button>
+                        </div>
+                    </header>
+                    <div style="padding: 1rem 0;">
+                        <p><small id="caddy-path-display" style="color: #868e96;"></small></p>
+                        <pre><code id="caddy-content-display"></code></pre>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Config View -->
+            <section id="config-view" class="view hidden">
+                <article style="max-width: 700px; margin: 0 auto; border-radius: 16px;">
+                    <header style="background: none; border-bottom: 1px solid #f1f3f5;"><h4>Global Settings</h4></header>
+                    <form id="config-form" style="padding-top: 1rem;">
+                        <div class="grid">
+                            <label>Base Domain <input type="text" id="cfg-base-domain" placeholder="example.com"></label>
+                            <label>LB Target (Caddy CNAME) <input type="text" id="cfg-target-cname" placeholder="caddy.example.com"></label>
+                        </div>
+                        <label>Cloudflare API Key <input type="password" id="cfg-cf-api-key" placeholder="••••••••"></label>
+                        <label>Cloudflare Zone ID <input type="text" id="cfg-cf-zone-id"></label>
+                        <label>Caddyfile Path <input type="text" id="cfg-caddy-path"></label>
+                        <button type="submit" style="margin-top: 1rem;">Update Configuration</button>
+                    </form>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <dialog id="create-container-modal">
+        <article style="border-radius: 20px;">
+            <header><h3>Provision New Agent</h3></header>
+            <form id="create-container-form">
+                <label>Target Node <select id="create-server-select" required></select></label>
+                <label>Template <select id="create-template-select" required></select></label>
+                <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
+                    <button type="button" class="secondary outline close-modal">Cancel</button>
+                    <button type="submit">Start Provisioning</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <dialog id="add-server-modal">
+        <article style="border-radius: 20px;">
+            <header><h3>Add Remote Node</h3></header>
+            <form id="add-server-form">
+                <div class="grid">
+                    <label>IP Address <input type="text" id="srv-ip" placeholder="1.2.3.4" required></label>
+                    <label>Port <input type="number" id="srv-port" value="3000" required></label>
+                </div>
+                <div class="grid">
+                    <label>X-API-Key <input type="password" id="srv-token" required></label>
+                    <label>Max Agents <input type="number" id="srv-max-agents" value="10" required></label>
+                </div>
+                <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
+                    <button type="button" class="secondary outline close-modal">Cancel</button>
+                    <button type="submit">Verify & Add</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <dialog id="add-template-modal">
+        <article style="max-width: 700px; border-radius: 20px;">
+            <header><h3>Template Configuration</h3></header>
+            <form id="add-template-form">
+                <div class="grid">
+                    <label>Keyword ID <input type="text" id="tmp-id" placeholder="e.g. standard" required></label>
+                    <label>Display Name <input type="text" id="tmp-display-name" placeholder="e.g. Standard Agent" required></label>
+                </div>
+                <label>Description <input type="text" id="tmp-description" placeholder="Brief explanation"></label>
+                <label>Metadata (JSON)
+                    <textarea id="tmp-metadata" rows="6" style="font-family: monospace; font-size: 0.8rem;" required></textarea>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="tmp-enabled" checked> Enable this template
+                </label>
+                <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
+                    <button type="button" class="secondary outline close-modal">Cancel</button>
+                    <button type="submit">Save Changes</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <script src="/public/app.js"></script>
+</body>
+</html>

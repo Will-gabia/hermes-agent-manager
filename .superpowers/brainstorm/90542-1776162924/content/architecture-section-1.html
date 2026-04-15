@@ -1,0 +1,91 @@
+<h2>Section 1 · System architecture</h2>
+<p class="subtitle">Recommended v1 shape: one Hono control-plane service, synchronous orchestration, template-only provisioning, and full Caddyfile generation from database state.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Centralized Remote Docker Manager</div>
+  <div class="mockup-body">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">
+      <div class="section" style="flex:1;min-width:210px;padding:14px;border:1px solid #dbe4ff;border-radius:12px;background:#f8fbff;">
+        <div class="label">Access Layer</div>
+        <div class="cards" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="card" style="padding:12px;border:1px solid #bfd5ff;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">Admin UI</h3>
+            <p style="margin:0;">Login, config, server, and container management screens.</p>
+          </div>
+          <div class="card" style="padding:12px;border:1px solid #cfc7ff;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">Admin Auth</h3>
+            <p style="margin:0;">Single admin credential from <code>.env</code> backed by session-based access.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="flex:1.6;min-width:320px;padding:14px;border:1px solid #cfe7d6;border-radius:12px;background:#f8fff9;">
+        <div class="label">Central Manager · Hono + TypeScript</div>
+        <div class="cards" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="card" style="padding:12px;border:1px solid #b8e0c2;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">Orchestration Service</h3>
+            <p style="margin:0;">Runs Create/Delete/Start/Stop/Status flows in request time and records final state.</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div class="card" style="flex:1;min-width:140px;padding:12px;border:1px solid #f4d98a;border-radius:10px;background:#fffdf6;">
+              <h3 style="margin:0 0 6px 0;">Prisma + SQLite</h3>
+              <p style="margin:0;">Config, servers, templates, containers, and operation history.</p>
+            </div>
+            <div class="card" style="flex:1;min-width:140px;padding:12px;border:1px solid #e4c6ff;border-radius:10px;background:#fcf8ff;">
+              <h3 style="margin:0 0 6px 0;">Cloudflare DNS</h3>
+              <p style="margin:0;">Creates and deletes domain records under the configured base domain.</p>
+            </div>
+          </div>
+          <div class="card" style="padding:12px;border:1px solid #d7dee7;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">Caddyfile Generator</h3>
+            <p style="margin:0;">Always regenerates the full routing file from DB state; v1 stops at file generation.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="flex:1;min-width:230px;padding:14px;border:1px solid #ffd4dc;border-radius:12px;background:#fff8fa;">
+        <div class="label">Remote Execution Layer</div>
+        <div class="cards" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="card" style="padding:12px;border:1px solid #ffc5d1;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">docker-container-api Nodes</h3>
+            <p style="margin:0;">Each registered server exposes a remote Docker control API with predefined container templates.</p>
+          </div>
+          <div class="card" style="padding:12px;border:1px solid #ffc5d1;border-radius:10px;background:#ffffff;">
+            <h3 style="margin:0 0 6px 0;">Managed Containers</h3>
+            <p style="margin:0;">Each container is assigned a generated slug, domain, API token, service port, and server binding.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Request flow</div>
+  <div class="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+    <div class="card" style="padding:12px;"><strong>1. Admin action</strong><p style="margin:6px 0 0 0;">Create/Delete from UI or API.</p></div>
+    <div class="card" style="padding:12px;"><strong>2. Remote container step</strong><p style="margin:6px 0 0 0;">Call docker-container-api on the selected server.</p></div>
+    <div class="card" style="padding:12px;"><strong>3. DNS step</strong><p style="margin:6px 0 0 0;">Apply Cloudflare record for the generated domain.</p></div>
+    <div class="card" style="padding:12px;"><strong>4. Routing step</strong><p style="margin:6px 0 0 0;">Regenerate the full Caddyfile from active containers.</p></div>
+    <div class="card" style="padding:12px;"><strong>5. Persist result</strong><p style="margin:6px 0 0 0;">Save success or error state for inspection.</p></div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>Why this fits v1</h4>
+    <ul>
+      <li>Simple operational model</li>
+      <li>Matches synchronous admin expectations</li>
+      <li>Keeps Caddy deployment concerns outside the app</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Known constraints</h4>
+    <ul>
+      <li>Longer request times during create/delete</li>
+      <li>Needs strong partial-failure tracking</li>
+      <li>Template-only provisioning by design</li>
+    </ul>
+  </div>
+</div>
