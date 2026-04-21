@@ -160,6 +160,7 @@
             <ul>
                 <li><a href="#" class="nav-link active" data-view="containers">Agents</a></li>
                 <li><a href="#" class="nav-link" data-view="servers">Servers</a></li>
+                <li><a href="#" class="nav-link" data-view="bastion">Bastion IDs</a></li>
                 <li><a href="#" class="nav-link" data-view="templates">Templates</a></li>
                 <li><a href="#" class="nav-link" data-view="playground">Playground</a></li>
                 <li><a href="#" class="nav-link" data-view="caddy">Caddyfile</a></li>
@@ -227,6 +228,28 @@
                                 <th>Usage</th>
                                 <th>Status</th>
                                 <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </article>
+            </section>
+
+            <!-- Bastion IDs View -->
+            <section id="bastion-view" class="view hidden">
+                <article style="border-radius: 16px;">
+                    <header style="display: flex; justify-content: space-between; align-items: center; background: none; border-bottom: 1px solid #f1f3f5;">
+                        <h4 style="margin:0;">Bastion ID Management</h4>
+                        <button id="show-add-bastion-modal" class="outline" style="padding: 0.4rem 1rem; font-size: 0.8rem;">+ Create Bastion ID</button>
+                    </header>
+                    <p><small style="color: #868e96;">Bastion IDs can have multiple agents assigned. These are used for multi-account syncing on the bastion server.</small></p>
+                    <table id="bastion-table" style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Bastion ID</th>
+                                <th>Assigned Agents</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -322,6 +345,39 @@
                 <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
                     <button type="button" class="secondary outline close-modal">Cancel</button>
                     <button type="submit">Verify & Add</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <dialog id="add-bastion-modal">
+        <article style="border-radius: 20px;">
+            <header><h3>Create New Bastion ID</h3></header>
+            <form id="add-bastion-form">
+                <label>ID <input type="text" id="bst-id" placeholder="e.g. user1" required></label>
+                <p><small>Result: <code>bastion-<span id="bst-id-preview">...</span></code></small></p>
+                <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
+                    <button type="button" class="secondary outline close-modal">Cancel</button>
+                    <button type="submit">Create ID</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <dialog id="assign-agent-modal">
+        <article style="border-radius: 20px;">
+            <header><h3>Assign Agents to Bastion ID</h3></header>
+            <form id="assign-agent-form">
+                <input type="hidden" id="assign-bastion-id">
+                <p>Assigning to: <strong id="assign-display-id"></strong></p>
+                <label>Select Agent to Add
+                    <select id="assign-agent-select">
+                        <option value="">-- Select Agent --</option>
+                    </select>
+                </label>
+                <footer style="display: flex; gap: 1rem; justify-content: flex-end; border: none; padding: 0; margin-top: 2rem;">
+                    <button type="button" class="secondary outline close-modal">Cancel</button>
+                    <button type="submit">Add to Bastion ID</button>
                 </footer>
             </form>
         </article>

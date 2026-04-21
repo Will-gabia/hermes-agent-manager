@@ -1,0 +1,6 @@
+# Caddyfile Example Template
+# This file is for reference. Copy it to Caddyfile for local use.
+
+# example.com {
+#     reverse_proxy http://1.2.3.4:8080
+# }

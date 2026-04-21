@@ -62,6 +62,15 @@ model Container {
   server          Server?           @relation(fields: [server_id], references: [id], onDelete: SetNull)
   template        ContainerTemplate? @relation(fields: [template_id], references: [id], onDelete: SetNull)
   operations      Operation[]
+  bastions        BastionId[]
+}
+
+model BastionId {
+  id           String   @id // e.g. 'bastion-user1'
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  containers   Container[]
 }
 
 model Operation {

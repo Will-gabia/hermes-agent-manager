@@ -11,6 +11,7 @@ const orch = new OrchestrationService();
 containers.use('*', apiAuth);
 
 containers.get('/', async (c) => {
+  const all = c.req.query('all') === 'true';
   const page = parseInt(c.req.query('page') || '1');
   const limit = parseInt(c.req.query('limit') || '20');
   const search = c.req.query('search') || '';
@@ -25,6 +26,24 @@ containers.get('/', async (c) => {
     where.status = { not: 'deleted' };
   }
 
+  if (all) {
+    const items = await prisma.container.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { server: true, template: true },
+    });
+    // Mask tokens
+    return c.json({ 
+      items: items.map(c => ({ 
+        ...c, 
+        api_token: c.api_token ? '********' : null,
+        server_api_token: c.server_api_token ? '********' : null,
+        server: c.server ? { ...c.server, api_token: '********' } : null
+      })), 
+      total: items.length 
+    });
+  }
+
   const [items, total] = await prisma.$transaction([
     prisma.container.findMany({
       where,
@@ -37,11 +56,27 @@ containers.get('/', async (c) => {
   ]);
 
   return c.json({
-    items,
+    items: items.map(c => ({ 
+      ...c, 
+      api_token: c.api_token ? '********' : null,
+      server_api_token: c.server_api_token ? '********' : null,
+      server: c.server ? { ...c.server, api_token: '********' } : null
+    })),
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
+  });
+});
+
+// Explicit endpoint to reveal token, session-only (adminAuth)
+containers.get('/:id/token', async (c) => {
+  const id = c.req.param('id');
+  const container = await prisma.container.findUnique({ where: { id } });
+  if (!container) return c.json({ error: 'Container not found' }, 404);
+  return c.json({ 
+    api_token: container.api_token,
+    server_api_token: container.server_api_token 
   });
 });
 

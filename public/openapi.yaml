@@ -58,6 +58,7 @@ paths:
   /api/containers:
     get:
       summary: List agents
+      description: Returns paginated list of agents. Use ?all=true for full list.
       tags: [Agents]
       parameters:
         - name: search
@@ -65,6 +66,10 @@ paths:
           schema: { type: string }
         - name: show_deleted
           in: query
+          schema: { type: boolean }
+        - name: all
+          in: query
+          description: Return all items without pagination
           schema: { type: boolean }
       responses:
         '200': { description: OK }
@@ -167,6 +172,105 @@ paths:
                 metadata: { type: string }
       responses:
         '200': { description: OK }
+
+  /api/bastion:
+    get:
+      summary: List all Bastion IDs
+      description: Returns all Bastion IDs with their assigned agents (No pagination).
+      tags: [Bastion]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    createdAt: { type: string, format: date-time }
+                    updatedAt: { type: string, format: date-time }
+                    containers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          domain_name: { type: string }
+                          container_name: { type: string }
+                          api_token: { type: string }
+                          slug: { type: string }
+                          status: { type: string }
+    post:
+      summary: Create a new Bastion ID
+      tags: [Bastion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+      responses:
+        '200': { description: Created }
+
+  /api/bastion/{id}:
+    delete:
+      summary: Delete a Bastion ID
+      tags: [Bastion]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /api/bastion/{id}/assign:
+    post:
+      summary: Assign or unassign an agent to a Bastion ID
+      tags: [Bastion]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                container_id: { type: string }
+                unassign: { type: boolean }
+      responses:
+        '200': { description: OK }
+
+  /api/bastion/connections:
+    get:
+      summary: Get all active Bastion ID to Agent mappings
+      description: Used by sync scripts on the bastion server. Returns multiple agents per ID.
+      tags: [Bastion]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      container_id: { type: string }
+                      slug: { type: string }
+                      domain: { type: string }
+                      api_token: { type: string }
+                      status: { type: string }
 
 components:
   schemas:

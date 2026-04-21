@@ -15,8 +15,16 @@ servers.get('/', async (c) => {
       }
     }
   });
-  // Mask api_token
-  return c.json(items.map(s => ({ ...s, api_token: '********' })));
+  // Mask tokens in the list view
+  return c.json(items.map(s => ({ ...s, api_token: s.api_token ? '********' : null })));
+});
+
+// Explicit endpoint to reveal token, session-only (adminAuth)
+servers.get('/:id/token', async (c) => {
+  const id = c.req.param('id');
+  const server = await prisma.server.findUnique({ where: { id } });
+  if (!server) return c.json({ error: 'Server not found' }, 404);
+  return c.json({ api_token: server.api_token });
 });
 
 servers.post('/', async (c) => {

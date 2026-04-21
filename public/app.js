@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         containers: document.getElementById('containers-view'),
         servers: document.getElementById('servers-view'),
         templates: document.getElementById('templates-view'),
+        bastion: document.getElementById('bastion-view'),
         playground: document.getElementById('playground-view'),
         caddy: document.getElementById('caddy-view'),
         config: document.getElementById('config-view')
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loadViewData = (viewName) => {
         if (viewName === 'containers') loadContainers();
         if (viewName === 'servers') loadServers();
+        if (viewName === 'bastion') loadBastion();
         if (viewName === 'templates') loadTemplates();
         if (viewName === 'playground') loadPlayground();
         if (viewName === 'caddy') loadCaddyData();
@@ -128,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tbody.innerHTML = data.map(s => `
             <tr>
                 <td>${s.remote_ip}:${s.port}</td>
-                <td><code>${s.api_token}</code></td>
+                <td><code onclick="copyToClipboard('${s.api_token}', 'Server API Token', '${s.id}', 'servers', event)" style="cursor: pointer;" title="Click to reveal & copy token">${s.api_token}</code></td>
                 <td><strong>${s._count?.containers || 0}</strong> / ${s.max_agents}</td>
                 <td><span class="status-badge status-active">Online</span></td>
                 <td style="text-align:right;"><button class="outline secondary contrast" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="deleteServer('${s.id}')">Delete</button></td>
@@ -274,6 +276,112 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // Bastion
+    const loadBastion = async () => {
+        const res = await fetch('/api/bastion');
+        const data = await res.json();
+        const tbody = document.querySelector('#bastion-table tbody');
+        tbody.innerHTML = data.map(b => `
+            <tr>
+                <td><code>${b.id}</code></td>
+                <td>
+                    ${b.containers && b.containers.length > 0 
+                        ? b.containers.map(c => `
+                            <div style="margin-bottom: 0.5rem; padding: 0.25rem 0.5rem; background: #f8f9fa; border-radius: 6px; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <small><strong>${c.domain_name}</strong></small>
+                                    <button class="outline secondary" style="padding: 0 0.3rem; font-size: 0.6rem; height: auto; margin: 0; width: auto;" onclick="unassignAgent('${b.id}', '${c.id}')">×</button>
+                                </div>
+                                <code style="font-size: 0.6rem; padding: 0.2rem; cursor: pointer;" onclick="copyToClipboard('${c.api_token}', 'Agent API Key', '${c.id}', 'containers', event)" title="Click to reveal & copy token">${c.api_token}</code>
+                            </div>
+                        `).join('')
+                        : '<span style="color: #adb5bd;">No agents assigned</span>'
+                    }
+                </td>
+                <td><small>${new Date(b.createdAt).toLocaleString()}</small></td>
+                <td style="text-align:right;">
+                    <button class="outline secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem;" onclick="showAssignModal('${b.id}')">Add Agent</button>
+                    <button class="outline secondary contrast" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="deleteBastion('${b.id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    };
+
+    window.showAssignModal = async (id) => {
+        const res = await fetch('/api/containers?limit=100');
+        const data = await res.json();
+        const activeAgents = data.items.filter(c => c.status !== 'deleted');
+        
+        const select = document.getElementById('assign-agent-select');
+        select.innerHTML = '<option value="">-- Select Agent --</option>' + 
+            activeAgents.map(a => `<option value="${a.id}">${a.domain_name} (${a.slug})</option>`).join('');
+        
+        document.getElementById('assign-bastion-id').value = id;
+        document.getElementById('assign-display-id').innerText = id;
+        select.value = '';
+        
+        modals.assignAgent.showModal();
+    };
+
+    window.unassignAgent = async (bastionId, containerId) => {
+        if (!confirm('Remove this agent from Bastion ID?')) return;
+        const res = await fetch(`/api/bastion/${bastionId}/assign`, {
+            method: 'POST',
+            body: JSON.stringify({ container_id: containerId, unassign: true }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) loadBastion();
+        else alert('Unassignment failed');
+    };
+
+    window.deleteBastion = async (id) => {
+        if (!confirm('Delete this Bastion ID?')) return;
+        const res = await fetch(`/api/bastion/${id}`, { method: 'DELETE' });
+        if (res.ok) loadBastion();
+        else alert('Delete failed');
+    };
+
+    document.getElementById('bst-id').addEventListener('input', (e) => {
+        document.getElementById('bst-id-preview').innerText = e.target.value || '...';
+    });
+
+    document.getElementById('add-bastion-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('bst-id').value;
+        const res = await fetch('/api/bastion', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (res.ok) {
+            closeModals();
+            loadBastion();
+        } else {
+            const err = await res.json();
+            alert(err.error || 'Create failed');
+        }
+    });
+
+    document.getElementById('assign-agent-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('assign-bastion-id').value;
+        const container_id = document.getElementById('assign-agent-select').value;
+        
+        const res = await fetch(`/api/bastion/${id}/assign`, {
+            method: 'POST',
+            body: JSON.stringify({ container_id }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (res.ok) {
+            closeModals();
+            loadBastion();
+        } else {
+            alert('Assignment failed');
+        }
+    });
+
     // Templates
     const loadTemplates = async () => {
         const res = await fetch('/api/templates');
@@ -389,7 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 <div class="info-item">
                     <span class="info-label">API Key</span>
-                    <code class="api-key" onclick="copyToClipboard('${c.api_token}', 'API Key')" title="Click to copy">${c.api_token || 'N/A'}</code>
+                    <code class="api-key" onclick="copyToClipboard('${c.api_token}', 'Agent API Key', '${c.id}', 'containers', event)" title="Click to reveal & copy token">${c.api_token || 'N/A'}</code>
                 </div>
 
                 <div class="card-actions">
@@ -404,11 +512,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    window.copyToClipboard = (text, label = 'Content') => {
-        if (!text) return;
-        navigator.clipboard.writeText(text).then(() => {
+    window.copyToClipboard = async (text, label = 'Content', id = null, type = null) => {
+        let content = text;
+        
+        // If it's a masked token, fetch the real one from the reveal endpoint
+        if (text.includes('***') && id && type) {
+            try {
+                const res = await fetch(`/api/${type}/${id}/token`);
+                const data = await res.json();
+                content = data.api_token || text;
+                
+                // Update the UI element so the user can see it's been loaded
+                const el = event.target;
+                if (el && el.tagName === 'CODE') {
+                    el.innerText = content;
+                }
+            } catch (e) {
+                console.error('Failed to fetch token', e);
+            }
+        }
+
+        if (!content || content.includes('***')) {
+            alert('Cannot copy masked token. Ensure you are logged in.');
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(content);
             alert(`${label} copied to clipboard`);
-        });
+        } catch (err) {
+            // Fallback for some browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = content;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert(`${label} copied to clipboard`);
+        }
     };
 
     document.getElementById('container-search').addEventListener('input', () => loadContainers());
@@ -506,6 +647,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modals = {
         createContainer: document.getElementById('create-container-modal'),
         addServer: document.getElementById('add-server-modal'),
+        addBastion: document.getElementById('add-bastion-modal'),
+        assignAgent: document.getElementById('assign-agent-modal'),
         addTemplate: document.getElementById('add-template-modal')
     };
 
@@ -529,6 +672,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('show-add-server-modal').addEventListener('click', () => {
         modals.addServer.showModal();
+    });
+
+    document.getElementById('show-add-bastion-modal').addEventListener('click', () => {
+        document.getElementById('bst-id').value = '';
+        document.getElementById('bst-id-preview').innerText = '...';
+        modals.addBastion.showModal();
     });
 
     document.getElementById('show-add-template-modal').addEventListener('click', () => {

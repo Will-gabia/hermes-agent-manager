@@ -11,6 +11,7 @@ import serverRoutes from './routes/servers.ts';
 import containerRoutes from './routes/containers.ts';
 import caddyRoutes from './routes/caddy.ts';
 import templateRoutes from './routes/templates.ts';
+import bastionRoutes from './routes/bastion.ts';
 
 import { serveStatic } from '@hono/node-server/serve-static';
 
@@ -50,6 +51,7 @@ app.route('/api/servers', serverRoutes);
 app.route('/api/containers', containerRoutes);
 app.route('/api/caddy', caddyRoutes);
 app.route('/api/templates', templateRoutes);
+app.route('/api/bastion', bastionRoutes);
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 console.log(`Server is running on port ${port}`);

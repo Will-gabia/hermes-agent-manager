@@ -188,9 +188,15 @@ export class OrchestrationService {
 
       // Step 4: Soft or Hard delete (Design says: keep as 'deleted' or hard-delete)
       // I'll keep it as 'deleted' for v1 to have history as suggested in Design.
+      // Also clear any linked BastionId as per requirement (N:M relationship)
       await prisma.container.update({
         where: { id: container.id },
-        data: { status: 'deleted' },
+        data: {
+          status: 'deleted',
+          bastions: {
+            set: [] // Disconnect from all Bastion IDs
+          }
+        },
       });
 
       await prisma.operation.update({

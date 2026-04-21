@@ -1,10 +1,21 @@
 node_modules
 .env
 dist
-dev.db
-prisma/dev.db
-dev.db-journal
-dev.db-shm
-dev.db-wal
 .ralph-state
 /src/generated/prisma
+
+# Database (Prisma / SQLite)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Config (Caddy)
+config/Caddyfile
+config/Caddyfile.local
+config/Caddyfile.example
+!config/Caddyfile.example
